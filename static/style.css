@@ -1,0 +1,153 @@
+/* Custom styles for CryptoPulse */
+
+body {
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border-radius: 0.5rem;
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: 600;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.price {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.text-success {
+    color: #28a745 !important;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.alert-status {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    background-color: #e9ecef;
+}
+
+.coin-name {
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+/* Price alert animations */
+.price-alert-high {
+    background-color: #d4edda !important;
+    animation: pulse-green 1s infinite;
+}
+
+.price-alert-low {
+    background-color: #f8d7da !important;
+    animation: pulse-red 1s infinite;
+}
+
+@keyframes pulse-green {
+    0% { background-color: #d4edda; }
+    50% { background-color: #c3e6cb; }
+    100% { background-color: #d4edda; }
+}
+
+@keyframes pulse-red {
+    0% { background-color: #f8d7da; }
+    50% { background-color: #f5c6cb; }
+    100% { background-color: #f8d7da; }
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+/* Custom button styles */
+.btn-outline-primary:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s;
+}
+
+.btn-outline-warning:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s;
+}
+
+/* Form improvements */
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Card hover effects */
+.card:hover {
+    transform: translateY(-2px);
+    transition: transform 0.3s ease;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Navigation improvements */
+.navbar-nav .nav-link:hover {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 0.25rem;
+    transition: all 0.3s ease;
+}
+
+/* Table row hover effects */
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Alert styling */
+.alert {
+    border: none;
+    border-radius: 0.5rem;
+}
+
+/* Modal improvements */
+.modal-content {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+}
+
+.modal-header {
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+}

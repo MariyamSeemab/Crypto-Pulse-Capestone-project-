@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - CryptoPulse{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Create Account</h3>
+                <p class="text-center text-muted mb-0">Join CryptoPulse community</p>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Account Type:</strong> You are creating a <strong>User Account</strong> with access to portfolio management, trading, and market data.
+                </div>
+                
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                        <small class="text-muted">Choose a unique username (3-20 characters)</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                        <small class="text-muted">Minimum 6 characters</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="terms" required>
+                        <label class="form-check-label" for="terms">
+                            I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms of Service</a>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="fas fa-user-plus me-2"></i>
+                        Create User Account
+                    </button>
+                </form>
+                
+                <div class="text-center mt-4">
+                    <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+                </div>
+                
+                <hr>
+                
+                <div class="alert alert-warning">
+                    <i class="fas fa-user-shield me-2"></i>
+                    <strong>Need Admin Access?</strong> Admin accounts are created by existing administrators. 
+                    Contact your system administrator for admin privileges.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Terms of Service</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>CryptoPulse Terms of Service</h6>
+                <p>By using CryptoPulse, you agree to the following terms:</p>
+                <ul>
+                    <li>This is a demo application for educational purposes</li>
+                    <li>All trading is done with virtual money</li>
+                    <li>Real cryptocurrency transactions are not supported</li>
+                    <li>Price data is provided for informational purposes only</li>
+                    <li>Users are responsible for their account security</li>
+                </ul>
+                <p><strong>Privacy:</strong> We do not collect personal information beyond what you provide during registration.</p>
+                <p><strong>Disclaimer:</strong> This application is for demonstration purposes only and should not be used for actual financial decisions.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('confirm_password').addEventListener('input', function() {
+    const password = document.getElementById('password').value;
+    const confirmPassword = this.value;
+    
+    if (password !== confirmPassword) {
+        this.setCustomValidity('Passwords do not match');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+
+document.getElementById('username').addEventListener('input', function() {
+    const username = this.value;
+    
+    if (username.length < 3) {
+        this.setCustomValidity('Username must be at least 3 characters');
+    } else if (username.length > 20) {
+        this.setCustomValidity('Username must be less than 20 characters');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+
+document.getElementById('password').addEventListener('input', function() {
+    const password = this.value;
+    
+    if (password.length < 6) {
+        this.setCustomValidity('Password must be at least 6 characters');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+</script>
+{% endblock %}

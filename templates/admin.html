@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - CryptoPulse{% endblock %}
+
+{% block content %}
+<h2>Admin Panel</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Manage Tracked Coins</h5>
+            </div>
+            <div class="card-body">
+                <h6>Currently Tracked:</h6>
+                <ul class="list-group mb-3">
+                    {% for coin in tracked_coins %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ coin.title() }}
+                        <button class="btn btn-sm btn-danger" onclick="removeCoin('{{ coin }}')">Remove</button>
+                    </li>
+                    {% endfor %}
+                </ul>
+                
+                <div class="input-group">
+                    <input type="text" id="newCoinId" class="form-control" placeholder="Enter coin ID (e.g., cardano)">
+                    <button class="btn btn-success" onclick="addCoin()">Add Coin</button>
+                </div>
+                <small class="text-muted">Use CoinGecko coin IDs (e.g., bitcoin, ethereum, cardano)</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>User Statistics</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Total Users:</strong> {{ users|length }}</p>
+                <h6>Registered Users:</h6>
+                <ul class="list-group">
+                    {% for user in users %}
+                    <li class="list-group-item">
+                        {{ user }}
+                        {% if user == 'admin' %}
+                            <span class="badge bg-primary">Admin</span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function addCoin() {
+    const coinId = document.getElementById('newCoinId').value.trim().toLowerCase();
+    if (!coinId) return;
+    
+    fetch('/api/add_coin', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ coin_id: coinId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error adding coin: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error adding coin');
+    });
+}
+
+function removeCoin(coinId) {
+    if (!confirm(`Remove ${coinId} from tracking?`)) return;
+    
+    fetch('/api/remove_coin', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ coin_id: coinId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error removing coin: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error removing coin');
+    });
+}
+</script>
+{% endblock %}

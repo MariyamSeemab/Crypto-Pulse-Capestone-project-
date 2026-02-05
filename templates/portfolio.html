@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+
+{% block title %}Portfolio - CryptoPulse{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>My Portfolio</h2>
+    <div class="d-flex gap-2">
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#buyModal">
+            <i class="fas fa-plus"></i> Buy Crypto
+        </button>
+        <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#sellModal">
+            <i class="fas fa-minus"></i> Sell Crypto
+        </button>
+    </div>
+</div>
+
+<!-- Portfolio Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Value</h5>
+                <h3 class="card-text">${{ "%.2f"|format(total_value) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Cash Balance</h5>
+                <h3 class="card-text">${{ "%.2f"|format(portfolio.balance) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Holdings Value</h5>
+                <h3 class="card-text">${{ "%.2f"|format(holdings_value) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5 class="card-title">P&L</h5>
+                <h3 class="card-text" id="totalPnL">
+                    {% set pnl = total_value - 10000 %}
+                    {% if pnl >= 0 %}
+                        +${{ "%.2f"|format(pnl) }}
+                    {% else %}
+                        -${{ "%.2f"|format(pnl|abs) }}
+                    {% endif %}
+                </h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Holdings Table -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Current Holdings</h5>
+            </div>
+            <div class="card-body">
+                {% if portfolio.holdings %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Coin</th>
+                                <th>Quantity</th>
+                                <th>Current Price</th>
+                                <th>Value</th>
+                                <th>24h Change</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for coin_id, quantity in portfolio.holdings.items() %}
+                            {% set coin_price = prices.get(coin_id, {}) %}
+                            {% if coin_price %}
+                            <tr>
+                                <td class="fw-bold">{{ coin_id.title() }}</td>
+                                <td>{{ "%.6f"|format(quantity) }}</td>
+                                <td>${{ "%.2f"|format(coin_price.usd) }}</td>
+                                <td>${{ "%.2f"|format(coin_price.usd * quantity) }}</td>
+                                <td class="{% if coin_price.usd_24h_change >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ "%.2f"|format(coin_price.usd_24h_change) }}%
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" data-coin="{{ coin_id }}" onclick="viewChart(this.dataset.coin)">
+                                        Chart
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" data-coin="{{ coin_id }}" data-quantity="{{ quantity }}" onclick="quickSell(this.dataset.coin, this.dataset.quantity)">
+                                        Sell
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-wallet fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No holdings yet</h5>
+                    <p class="text-muted">Start by buying some cryptocurrency!</p>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#buyModal">
+                        Buy Your First Crypto
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Transactions -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Recent Transactions</h5>
+            </div>
+            <div class="card-body">
+                {% if transactions %}
+                <div class="transaction-list">
+                    {% for tx in transactions|reverse %}
+                    <div class="transaction-item mb-3 p-2 border rounded">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge {% if tx.type == 'buy' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ tx.type.upper() }}
+                                </span>
+                                <strong>{{ tx.coin_id.title() }}</strong>
+                            </div>
+                            <small class="text-muted">{{ tx.timestamp[:10] }}</small>
+                        </div>
+                        <div class="mt-1">
+                            <small>
+                                {{ "%.6f"|format(tx.quantity) }} @ ${{ "%.2f"|format(tx.price) }}
+                                = ${{ "%.2f"|format(tx.amount) }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-history fa-2x text-muted mb-2"></i>
+                    <p class="text-muted">No transactions yet</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Buy Modal -->
+<div class="modal fade" id="buyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Buy Cryptocurrency</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="buyForm">
+                    <div class="mb-3">
+                        <label for="buyCoin" class="form-label">Select Coin</label>
+                        <select class="form-control" id="buyCoin" required>
+                            <option value="">Choose a coin...</option>
+                            {% for coin in tracked_coins %}
+                            <option value="{{ coin }}">{{ coin.title() }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="buyAmount" class="form-label">Amount (USD)</label>
+                        <input type="number" class="form-control" id="buyAmount" step="0.01" min="1" required>
+                        <small class="text-muted">Available balance: ${{ "%.2f"|format(portfolio.balance) }}</small>
+                    </div>
+                    <div id="buyPreview" class="alert alert-info" style="display: none;"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="executeBuy()">Buy</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sell Modal -->
+<div class="modal fade" id="sellModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Sell Cryptocurrency</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="sellForm">
+                    <div class="mb-3">
+                        <label for="sellCoin" class="form-label">Select Coin</label>
+                        <select class="form-control" id="sellCoin" required>
+                            <option value="">Choose a coin...</option>
+                            {% for coin_id, quantity in portfolio.holdings.items() %}
+                            <option value="{{ coin_id }}">{{ coin_id.title() }} ({{ "%.6f"|format(quantity) }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="sellQuantity" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="sellQuantity" step="0.000001" min="0.000001" required>
+                        <small class="text-muted" id="sellAvailable"></small>
+                    </div>
+                    <div id="sellPreview" class="alert alert-info" style="display: none;"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="executeSell()">Sell</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize data from Flask template safely
+var currentPrices = {};
+var portfolioHoldings = {};
+
+try {
+    currentPrices = JSON.parse('{{ prices|tojson|safe }}');
+    portfolioHoldings = JSON.parse('{{ portfolio.holdings|tojson|safe }}');
+} catch (e) {
+    console.error('Error parsing template data:', e);
+    currentPrices = {};
+    portfolioHoldings = {};
+}
+
+// Initialize event listeners when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    const buyCoinSelect = document.getElementById('buyCoin');
+    const buyAmountInput = document.getElementById('buyAmount');
+    const sellCoinSelect = document.getElementById('sellCoin');
+    const sellQuantityInput = document.getElementById('sellQuantity');
+    
+    if (buyCoinSelect) {
+        buyCoinSelect.addEventListener('change', updateBuyPreview);
+    }
+    if (buyAmountInput) {
+        buyAmountInput.addEventListener('input', updateBuyPreview);
+    }
+    if (sellCoinSelect) {
+        sellCoinSelect.addEventListener('change', updateSellInfo);
+    }
+    if (sellQuantityInput) {
+        sellQuantityInput.addEventListener('input', updateSellPreview);
+    }
+}
+
+function updateBuyPreview() {
+    const coin = document.getElementById('buyCoin').value;
+    const amount = parseFloat(document.getElementById('buyAmount').value);
+    const preview = document.getElementById('buyPreview');
+    
+    if (coin && amount && currentPrices[coin]) {
+        const price = currentPrices[coin].usd;
+        const quantity = amount / price;
+        preview.innerHTML = 'You will receive approximately <strong>' + quantity.toFixed(6) + ' ' + coin.toUpperCase() + '</strong> at $' + price.toFixed(2) + ' per coin';
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+function updateSellInfo() {
+    const coin = document.getElementById('sellCoin').value;
+    const available = document.getElementById('sellAvailable');
+    
+    if (coin && portfolioHoldings[coin]) {
+        available.textContent = 'Available: ' + portfolioHoldings[coin].toFixed(6) + ' ' + coin.toUpperCase();
+    }
+}
+
+function updateSellPreview() {
+    const coin = document.getElementById('sellCoin').value;
+    const quantity = parseFloat(document.getElementById('sellQuantity').value);
+    const preview = document.getElementById('sellPreview');
+    
+    if (coin && quantity && currentPrices[coin]) {
+        const price = currentPrices[coin].usd;
+        const total = quantity * price;
+        preview.innerHTML = 'You will receive approximately <strong>$' + total.toFixed(2) + '</strong> at $' + price.toFixed(2) + ' per coin';
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+function executeBuy() {
+    const coin = document.getElementById('buyCoin').value;
+    const amount = parseFloat(document.getElementById('buyAmount').value);
+    
+    if (!coin || !amount) return;
+    
+    fetch('/api/buy_coin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coin_id: coin, amount: amount })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess('Successfully bought ' + data.transaction.quantity.toFixed(6) + ' ' + coin.toUpperCase());
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showError(data.error);
+        }
+    })
+    .catch(error => showError('Transaction failed'));
+    
+    bootstrap.Modal.getInstance(document.getElementById('buyModal')).hide();
+}
+
+function executeSell() {
+    const coin = document.getElementById('sellCoin').value;
+    const quantity = parseFloat(document.getElementById('sellQuantity').value);
+    
+    if (!coin || !quantity) return;
+    
+    fetch('/api/sell_coin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coin_id: coin, quantity: quantity })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess('Successfully sold ' + quantity.toFixed(6) + ' ' + coin.toUpperCase());
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showError(data.error);
+        }
+    })
+    .catch(error => showError('Transaction failed'));
+    
+    bootstrap.Modal.getInstance(document.getElementById('sellModal')).hide();
+}
+
+function quickSell(coin, quantity) {
+    const parsedQuantity = parseFloat(quantity);
+    if (confirm('Sell all ' + parsedQuantity.toFixed(6) + ' ' + coin.toUpperCase() + '?')) {
+        fetch('/api/sell_coin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ coin_id: coin, quantity: parsedQuantity })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess('Successfully sold ' + parsedQuantity.toFixed(6) + ' ' + coin.toUpperCase());
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showError(data.error);
+            }
+        });
+    }
+}
+
+function viewChart(coin) {
+    window.open('/charts/' + coin, '_blank');
+}
+
+function showSuccess(message) {
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999;';
+    alert.innerHTML = message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+    document.body.appendChild(alert);
+    setTimeout(() => alert.remove(), 3000);
+}
+
+function showError(message) {
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999;';
+    alert.innerHTML = message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+    document.body.appendChild(alert);
+    setTimeout(() => alert.remove(), 3000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,418 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - CryptoPulse{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <h2 class="mb-4">Settings</h2>
+        
+        <!-- Theme Settings -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Appearance</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="themeSelect" class="form-label">Theme</label>
+                        <select class="form-select" id="themeSelect">
+                            <option value="light" {% if settings.theme == 'light' %}selected{% endif %}>Light</option>
+                            <option value="dark" {% if settings.theme == 'dark' %}selected{% endif %}>Dark</option>
+                            <option value="auto" {% if settings.theme == 'auto' %}selected{% endif %}>Auto</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="currencySelect" class="form-label">Default Currency</label>
+                        <select class="form-select" id="currencySelect">
+                            <option value="usd" {% if settings.default_currency == 'USD' %}selected{% endif %}>USD ($) - US Dollar</option>
+                            <option value="eur" {% if settings.default_currency == 'EUR' %}selected{% endif %}>EUR (€) - Euro</option>
+                            <option value="gbp" {% if settings.default_currency == 'GBP' %}selected{% endif %}>GBP (£) - British Pound</option>
+                            <option value="jpy" {% if settings.default_currency == 'JPY' %}selected{% endif %}>JPY (¥) - Japanese Yen</option>
+                            <option value="cad" {% if settings.default_currency == 'CAD' %}selected{% endif %}>CAD (C$) - Canadian Dollar</option>
+                            <option value="aud" {% if settings.default_currency == 'AUD' %}selected{% endif %}>AUD (A$) - Australian Dollar</option>
+                            <option value="chf" {% if settings.default_currency == 'CHF' %}selected{% endif %}>CHF - Swiss Franc</option>
+                            <option value="cny" {% if settings.default_currency == 'CNY' %}selected{% endif %}>CNY (¥) - Chinese Yuan</option>
+                            <option value="inr" {% if settings.default_currency == 'INR' %}selected{% endif %}>INR (₹) - Indian Rupee</option>
+                            <option value="krw" {% if settings.default_currency == 'KRW' %}selected{% endif %}>KRW (₩) - South Korean Won</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-primary" onclick="applyTheme()">Apply Theme</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notification Settings -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Notifications</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="browserNotifications" 
+                           {% if settings.notifications %}checked{% endif %}>
+                    <label class="form-check-label" for="browserNotifications">
+                        Browser Notifications
+                    </label>
+                    <small class="form-text text-muted d-block">Get notified when price alerts are triggered</small>
+                </div>
+                
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="emailAlerts" 
+                           {% if settings.email_alerts %}checked{% endif %}>
+                    <label class="form-check-label" for="emailAlerts">
+                        Email Alerts
+                    </label>
+                    <small class="form-text text-muted d-block">Receive price alerts via email</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="refreshInterval" class="form-label">Auto-refresh Interval (seconds)</label>
+                    <select class="form-select" id="refreshInterval">
+                        <option value="10" {% if settings.refresh_interval == 10 %}selected{% endif %}>10 seconds</option>
+                        <option value="30" {% if settings.refresh_interval == 30 %}selected{% endif %}>30 seconds</option>
+                        <option value="60" {% if settings.refresh_interval == 60 %}selected{% endif %}>1 minute</option>
+                        <option value="300" {% if settings.refresh_interval == 300 %}selected{% endif %}>5 minutes</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Portfolio Settings -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Portfolio</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="showPortfolioValue" checked>
+                    <label class="form-check-label" for="showPortfolioValue">
+                        Show Portfolio Value on Dashboard
+                    </label>
+                </div>
+                
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="showPnL" checked>
+                    <label class="form-check-label" for="showPnL">
+                        Show Profit/Loss Indicators
+                    </label>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="defaultTradeAmount" class="form-label">Default Trade Amount ($)</label>
+                    <input type="number" class="form-control" id="defaultTradeAmount" value="100" min="1" step="1">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data & Privacy -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Data & Privacy</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="saveSearchHistory" checked>
+                    <label class="form-check-label" for="saveSearchHistory">
+                        Save Search History
+                    </label>
+                </div>
+                
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="analyticsOptIn">
+                    <label class="form-check-label" for="analyticsOptIn">
+                        Share Anonymous Usage Data
+                    </label>
+                    <small class="form-text text-muted d-block">Help improve CryptoPulse by sharing anonymous usage statistics</small>
+                </div>
+                
+                <div class="mt-4">
+                    <h6>Data Management</h6>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-warning" onclick="exportData()">
+                            <i class="fas fa-download"></i> Export My Data
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="clearData()">
+                            <i class="fas fa-trash"></i> Clear Local Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Account Settings -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Account</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-control" value="{{ session.username }}" readonly>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Account Type</label>
+                    <input type="text" class="form-control" value="{{ session.role.title() }}" readonly>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" onclick="changePassword()">
+                        <i class="fas fa-key"></i> Change Password
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="resetPortfolio()">
+                        <i class="fas fa-undo"></i> Reset Portfolio
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Save Settings -->
+        <div class="text-center">
+            <button class="btn btn-success btn-lg" onclick="saveSettings()">
+                <i class="fas fa-save"></i> Save All Settings
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="passwordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Change Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="passwordForm">
+                    <div class="mb-3">
+                        <label for="currentPassword" class="form-label">Current Password</label>
+                        <input type="password" class="form-control" id="currentPassword" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="newPassword" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" id="confirmPassword" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updatePassword()">Update Password</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load saved settings from localStorage
+document.addEventListener('DOMContentLoaded', function() {
+    loadSavedSettings();
+    
+    // Request notification permission if not already granted
+    if ('Notification' in window && Notification.permission === 'default') {
+        document.getElementById('browserNotifications').addEventListener('change', function() {
+            if (this.checked) {
+                Notification.requestPermission();
+            }
+        });
+    }
+});
+
+function loadSavedSettings() {
+    const savedSettings = JSON.parse(localStorage.getItem('userSettings') || '{}');
+    
+    // Apply saved theme
+    if (savedSettings.theme) {
+        document.getElementById('themeSelect').value = savedSettings.theme;
+        applyThemeClass(savedSettings.theme);
+    }
+    
+    // Apply other saved settings
+    if (savedSettings.refreshInterval) {
+        document.getElementById('refreshInterval').value = savedSettings.refreshInterval;
+    }
+    
+    if (savedSettings.defaultTradeAmount) {
+        document.getElementById('defaultTradeAmount').value = savedSettings.defaultTradeAmount;
+    }
+}
+
+function applyTheme() {
+    const theme = document.getElementById('themeSelect').value;
+    applyThemeClass(theme);
+    
+    // Save to localStorage
+    const settings = JSON.parse(localStorage.getItem('userSettings') || '{}');
+    settings.theme = theme;
+    localStorage.setItem('userSettings', JSON.stringify(settings));
+    
+    showSuccess('Theme applied successfully!');
+}
+
+function applyThemeClass(theme) {
+    const body = document.body;
+    body.classList.remove('theme-light', 'theme-dark');
+    
+    if (theme === 'dark') {
+        body.classList.add('theme-dark');
+    } else if (theme === 'light') {
+        body.classList.add('theme-light');
+    } else if (theme === 'auto') {
+        // Use system preference
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            body.classList.add('theme-dark');
+        } else {
+            body.classList.add('theme-light');
+        }
+    }
+}
+
+function saveSettings() {
+    const settings = {
+        theme: document.getElementById('themeSelect').value,
+        currency: document.getElementById('currencySelect').value,
+        notifications: document.getElementById('browserNotifications').checked,
+        emailAlerts: document.getElementById('emailAlerts').checked,
+        refreshInterval: parseInt(document.getElementById('refreshInterval').value),
+        showPortfolioValue: document.getElementById('showPortfolioValue').checked,
+        showPnL: document.getElementById('showPnL').checked,
+        defaultTradeAmount: parseFloat(document.getElementById('defaultTradeAmount').value),
+        saveSearchHistory: document.getElementById('saveSearchHistory').checked,
+        analyticsOptIn: document.getElementById('analyticsOptIn').checked
+    };
+    
+    localStorage.setItem('userSettings', JSON.stringify(settings));
+    showSuccess('Settings saved successfully!');
+}
+
+function changePassword() {
+    new bootstrap.Modal(document.getElementById('passwordModal')).show();
+}
+
+function updatePassword() {
+    const current = document.getElementById('currentPassword').value;
+    const newPass = document.getElementById('newPassword').value;
+    const confirm = document.getElementById('confirmPassword').value;
+    
+    if (newPass !== confirm) {
+        alert('New passwords do not match!');
+        return;
+    }
+    
+    if (newPass.length < 6) {
+        alert('Password must be at least 6 characters long!');
+        return;
+    }
+    
+    // In a real app, this would make an API call
+    alert('Password change functionality would be implemented here');
+    bootstrap.Modal.getInstance(document.getElementById('passwordModal')).hide();
+}
+
+function resetPortfolio() {
+    if (confirm('Are you sure you want to reset your portfolio? This will restore your balance to $10,000 and clear all holdings. This action cannot be undone.')) {
+        // In a real app, this would make an API call
+        alert('Portfolio reset functionality would be implemented here');
+    }
+}
+
+function exportData() {
+    const userData = {
+        settings: JSON.parse(localStorage.getItem('userSettings') || '{}'),
+        alerts: JSON.parse(localStorage.getItem('priceAlerts') || '{}'),
+        favorites: JSON.parse(localStorage.getItem('favorites') || '[]'),
+        exportDate: new Date().toISOString()
+    };
+    
+    const dataStr = JSON.stringify(userData, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = 'cryptopulse-data-export.json';
+    link.click();
+    
+    showSuccess('Data exported successfully!');
+}
+
+function clearData() {
+    if (confirm('Are you sure you want to clear all local data? This includes settings, alerts, and favorites. This action cannot be undone.')) {
+        localStorage.removeItem('userSettings');
+        localStorage.removeItem('priceAlerts');
+        localStorage.removeItem('favorites');
+        
+        showSuccess('Local data cleared successfully!');
+        setTimeout(() => location.reload(), 1000);
+    }
+}
+
+function showSuccess(message) {
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999;';
+    alert.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    document.body.appendChild(alert);
+    setTimeout(() => alert.remove(), 3000);
+}
+</script>
+
+<style>
+/* Dark theme styles */
+.theme-dark {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+.theme-dark .card {
+    background-color: #2d2d2d;
+    border-color: #404040;
+}
+
+.theme-dark .card-header {
+    background-color: #404040;
+    border-color: #404040;
+    color: #ffffff;
+}
+
+.theme-dark .form-control,
+.theme-dark .form-select {
+    background-color: #404040;
+    border-color: #555555;
+    color: #ffffff;
+}
+
+.theme-dark .form-control:focus,
+.theme-dark .form-select:focus {
+    background-color: #404040;
+    border-color: #0d6efd;
+    color: #ffffff;
+}
+
+.theme-dark .text-muted {
+    color: #aaaaaa !important;
+}
+
+/* Light theme styles */
+.theme-light {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.card-header h5 {
+    margin: 0;
+    font-weight: 600;
+}
+</style>
+{% endblock %}

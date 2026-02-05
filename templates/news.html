@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}Crypto News - CryptoPulse{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Cryptocurrency News</h2>
+    <button class="btn btn-outline-primary" onclick="refreshNews()">
+        <i class="fas fa-sync-alt"></i> Refresh
+    </button>
+</div>
+
+<!-- Market Overview Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="card-title">Market Cap</h6>
+                <h4 id="totalMarketCap" class="text-primary">Loading...</h4>
+                <small id="marketCapChange" class="text-muted"></small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="card-title">24h Volume</h6>
+                <h4 id="totalVolume" class="text-info">Loading...</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="card-title">BTC Dominance</h6>
+                <h4 id="btcDominance" class="text-warning">Loading...</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="card-title">Fear & Greed</h6>
+                <h4 id="fearGreed" class="text-success">Loading...</h4>
+                <small id="fearGreedLabel" class="text-muted"></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- News Feed -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Latest News</h5>
+            </div>
+            <div class="card-body">
+                <div id="newsContainer">
+                    {% for article in news %}
+                    <div class="news-item mb-4 pb-3 border-bottom">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="news-title mb-1">
+                                <a href="{{ article.url }}" target="_blank" class="text-decoration-none">
+                                    {{ article.title }}
+                                </a>
+                            </h6>
+                            <small class="text-muted">{{ article.source }}</small>
+                        </div>
+                        <p class="news-description text-muted mb-2">{{ article.description }}</p>
+                        <small class="text-muted">
+                            <i class="fas fa-clock"></i> 
+                            {{ article.published_at[:10] }}
+                        </small>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if not news %}
+                <div class="text-center py-4">
+                    <i class="fas fa-newspaper fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No news available</h5>
+                    <p class="text-muted">Check back later for the latest crypto news!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Trending & Sidebar -->
+    <div class="col-lg-4">
+        <!-- Trending Coins -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6>🔥 Trending Coins</h6>
+            </div>
+            <div class="card-body">
+                <div id="trendingCoins">
+                    <div class="text-center">
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                        <small class="text-muted d-block mt-2">Loading trending coins...</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6>Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('portfolio') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-wallet"></i> View Portfolio
+                    </a>
+                    <button class="btn btn-success btn-sm" onclick="quickBuyModal()">
+                        <i class="fas fa-plus"></i> Quick Buy
+                    </button>
+                    <a href="{{ url_for('charts', coin_id='bitcoin') }}" class="btn btn-info btn-sm">
+                        <i class="fas fa-chart-line"></i> Bitcoin Chart
+                    </a>
+                    <button class="btn btn-warning btn-sm" onclick="setGlobalAlert()">
+                        <i class="fas fa-bell"></i> Set Alert
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Market Sentiment -->
+        <div class="card">
+            <div class="card-header">
+                <h6>Market Sentiment</h6>
+            </div>
+            <div class="card-body">
+                <div class="sentiment-gauge mb-3">
+                    <div class="progress" style="height: 20px;">
+                        <div id="sentimentBar" class="progress-bar bg-success" role="progressbar" style="width: 65%"></div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-1">
+                        <small class="text-danger">Fear</small>
+                        <small class="text-success">Greed</small>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <h5 id="sentimentValue">65</h5>
+                    <small id="sentimentLabel" class="text-muted">Greed</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Buy Modal -->
+<div class="modal fade" id="quickBuyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quick Buy</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <button class="btn btn-outline-primary w-100" onclick="quickBuy('bitcoin', 50)">
+                            BTC $50
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button class="btn btn-outline-primary w-100" onclick="quickBuy('ethereum', 50)">
+                            ETH $50
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button class="btn btn-outline-primary w-100" onclick="quickBuy('bitcoin', 100)">
+                            BTC $100
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button class="btn btn-outline-primary w-100" onclick="quickBuy('ethereum', 100)">
+                            ETH $100
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load market data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadMarketStats();
+    loadTrendingCoins();
+    loadFearGreedIndex();
+});
+
+function loadMarketStats() {
+    fetch('/api/market_stats')
+        .then(response => response.json())
+        .then(data => {
+            if (!data.error) {
+                document.getElementById('totalMarketCap').textContent = 
+                    '$' + (data.total_market_cap / 1e12).toFixed(2) + 'T';
+                document.getElementById('totalVolume').textContent = 
+                    '$' + (data.total_volume / 1e9).toFixed(1) + 'B';
+                document.getElementById('btcDominance').textContent = 
+                    data.bitcoin_dominance.toFixed(1) + '%';
+                
+                const changeElement = document.getElementById('marketCapChange');
+                const change = data.market_cap_change_24h;
+                changeElement.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+                changeElement.className = change >= 0 ? 'text-success' : 'text-danger';
+            }
+        })
+        .catch(error => console.error('Error loading market stats:', error));
+}
+
+function loadTrendingCoins() {
+    fetch('/api/trending')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('trendingCoins');
+            if (data.length > 0) {
+                container.innerHTML = '';
+                data.forEach((coin, index) => {
+                    const coinElement = document.createElement('div');
+                    coinElement.className = 'd-flex justify-content-between align-items-center mb-2';
+                    coinElement.innerHTML = `
+                        <div>
+                            <span class="badge bg-secondary me-2">${index + 1}</span>
+                            <strong>${coin.name}</strong>
+                            <small class="text-muted">(${coin.symbol.toUpperCase()})</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewChart('${coin.id}')">
+                            Chart
+                        </button>
+                    `;
+                    container.appendChild(coinElement);
+                });
+            } else {
+                container.innerHTML = '<p class="text-muted text-center">No trending data available</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading trending coins:', error);
+            document.getElementById('trendingCoins').innerHTML = 
+                '<p class="text-muted text-center">Failed to load trending coins</p>';
+        });
+}
+
+function loadFearGreedIndex() {
+    fetch('/api/fear_greed')
+        .then(response => response.json())
+        .then(data => {
+            if (!data.error) {
+                document.getElementById('fearGreed').textContent = data.value;
+                document.getElementById('fearGreedLabel').textContent = data.value_classification;
+                document.getElementById('sentimentValue').textContent = data.value;
+                document.getElementById('sentimentLabel').textContent = data.value_classification;
+                
+                // Update progress bar
+                const sentimentBar = document.getElementById('sentimentBar');
+                sentimentBar.style.width = data.value + '%';
+                
+                // Update color based on sentiment
+                if (data.value < 25) {
+                    sentimentBar.className = 'progress-bar bg-danger';
+                } else if (data.value < 50) {
+                    sentimentBar.className = 'progress-bar bg-warning';
+                } else if (data.value < 75) {
+                    sentimentBar.className = 'progress-bar bg-info';
+                } else {
+                    sentimentBar.className = 'progress-bar bg-success';
+                }
+            }
+        })
+        .catch(error => console.error('Error loading Fear & Greed Index:', error));
+}
+
+function refreshNews() {
+    location.reload();
+}
+
+function quickBuyModal() {
+    new bootstrap.Modal(document.getElementById('quickBuyModal')).show();
+}
+
+function quickBuy(coin, amount) {
+    fetch('/api/buy_coin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coin_id: coin, amount: amount })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Successfully bought $${amount} worth of ${coin.toUpperCase()}`);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => alert('Transaction failed'));
+    
+    bootstrap.Modal.getInstance(document.getElementById('quickBuyModal')).hide();
+}
+
+function viewChart(coinId) {
+    window.open(`/charts/${coinId}`, '_blank');
+}
+
+function setGlobalAlert() {
+    const coin = prompt('Enter coin ID (e.g., bitcoin, ethereum):');
+    const price = prompt('Enter alert price:');
+    
+    if (coin && price) {
+        const alerts = JSON.parse(localStorage.getItem('priceAlerts') || '{}');
+        alerts[coin] = { price: parseFloat(price), type: 'above' };
+        localStorage.setItem('priceAlerts', JSON.stringify(alerts));
+        alert(`Alert set for ${coin.toUpperCase()} above $${price}`);
+    }
+}
+</script>
+
+<style>
+.news-item:last-child {
+    border-bottom: none !important;
+}
+
+.news-title a:hover {
+    color: #0d6efd !important;
+}
+
+.sentiment-gauge .progress {
+    border-radius: 10px;
+}
+
+.card-header h6 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+</style>
+{% endblock %}

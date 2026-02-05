@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - CryptoPulse{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>
+            <i class="fas fa-user-shield text-warning me-2"></i>
+            Admin Dashboard
+        </h2>
+        <p class="text-muted mb-0">System management and monitoring</p>
+    </div>
+    <div class="badge bg-warning text-dark fs-6">
+        <i class="fas fa-crown me-1"></i>
+        Administrator
+    </div>
+</div>
+
+<!-- Admin Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <h4>{{ stats.total_users }}</h4>
+                <small>Total Users</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <i class="fas fa-user-shield fa-2x mb-2"></i>
+                <h4>{{ stats.admin_users }}</h4>
+                <small>Admins</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-user fa-2x mb-2"></i>
+                <h4>{{ stats.regular_users }}</h4>
+                <small>Regular Users</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-coins fa-2x mb-2"></i>
+                <h4>{{ stats.tracked_coins }}</h4>
+                <small>Tracked Coins</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-secondary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-wallet fa-2x mb-2"></i>
+                <h4>{{ stats.total_portfolios }}</h4>
+                <small>Portfolios</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-dark text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-exchange-alt fa-2x mb-2"></i>
+                <h4>{{ stats.total_transactions }}</h4>
+                <small>Transactions</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Actions -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>
+                    <i class="fas fa-cogs me-2"></i>
+                    System Management
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="location.href='{{ url_for('admin') }}'">
+                        <i class="fas fa-coins me-2"></i>
+                        Manage Tracked Coins
+                    </button>
+                    <button class="btn btn-outline-info" onclick="viewSystemLogs()">
+                        <i class="fas fa-file-alt me-2"></i>
+                        View System Logs
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="backupData()">
+                        <i class="fas fa-download me-2"></i>
+                        Backup System Data
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="clearCache()">
+                        <i class="fas fa-trash me-2"></i>
+                        Clear System Cache
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>
+                    <i class="fas fa-users-cog me-2"></i>
+                    User Management
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>
+                                    <i class="fas fa-user me-1"></i>
+                                    {{ user }}
+                                </td>
+                                <td>
+                                    {% if user == 'admin' %}
+                                        <span class="badge bg-warning">Admin</span>
+                                    {% else %}
+                                        <span class="badge bg-primary">User</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-info" onclick="viewUserDetails('{{ user }}')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        {% if user != 'admin' %}
+                                        <button class="btn btn-outline-danger" onclick="suspendUser('{{ user }}')">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions Row -->
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Market Monitoring
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Monitor market conditions and API status</p>
+                <button class="btn btn-primary btn-sm" onclick="checkAPIStatus()">
+                    Check API Status
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-database me-2"></i>
+                    Data Management
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Export and manage system data</p>
+                <button class="btn btn-success btn-sm" onclick="exportAllData()">
+                    Export All Data
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    Security
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Security settings and access logs</p>
+                <button class="btn btn-warning btn-sm" onclick="viewSecurityLogs()">
+                    Security Logs
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Details Modal -->
+<div class="modal fade" id="userDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">User Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="userDetailsContent">
+                <!-- User details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewUserDetails(username) {
+    const content = document.getElementById('userDetailsContent');
+    content.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6>User Information</h6>
+                <p><strong>Username:</strong> ${username}</p>
+                <p><strong>Role:</strong> ${username === 'admin' ? 'Administrator' : 'Regular User'}</p>
+                <p><strong>Status:</strong> <span class="badge bg-success">Active</span></p>
+            </div>
+            <div class="col-md-6">
+                <h6>Portfolio Summary</h6>
+                <p><strong>Portfolio Value:</strong> $10,000.00</p>
+                <p><strong>Total Trades:</strong> 0</p>
+                <p><strong>Last Login:</strong> Today</p>
+            </div>
+        </div>
+        <hr>
+        <h6>Recent Activity</h6>
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            No recent activity to display
+        </div>
+    `;
+    
+    new bootstrap.Modal(document.getElementById('userDetailsModal')).show();
+}
+
+function suspendUser(username) {
+    if (confirm(`Are you sure you want to suspend user "${username}"?`)) {
+        alert('User suspension functionality would be implemented here');
+    }
+}
+
+function viewSystemLogs() {
+    alert('System logs viewer would be implemented here');
+}
+
+function backupData() {
+    if (confirm('Create a backup of all system data?')) {
+        alert('Data backup functionality would be implemented here');
+    }
+}
+
+function clearCache() {
+    if (confirm('Clear all system cache? This may temporarily slow down the application.')) {
+        alert('Cache clearing functionality would be implemented here');
+    }
+}
+
+function checkAPIStatus() {
+    fetch('/api/prices')
+        .then(response => {
+            if (response.ok) {
+                alert('✅ API Status: All systems operational');
+            } else {
+                alert('⚠️ API Status: Some issues detected');
+            }
+        })
+        .catch(error => {
+            alert('❌ API Status: Connection failed');
+        });
+}
+
+function exportAllData() {
+    if (confirm('Export all user and system data?')) {
+        alert('Data export functionality would be implemented here');
+    }
+}
+
+function viewSecurityLogs() {
+    alert('Security logs viewer would be implemented here');
+}
+
+// Auto-refresh stats every 30 seconds
+setInterval(function() {
+    // In a real implementation, this would fetch updated stats
+    console.log('Refreshing admin stats...');
+}, 30000);
+</script>
+
+<style>
+.card:hover {
+    transform: translateY(-2px);
+    transition: transform 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.fa-2x {
+    font-size: 2rem;
+}
+
+.badge.fs-6 {
+    font-size: 1rem !important;
+}
+</style>
+{% endblock %}

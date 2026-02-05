@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}About - CryptoPulse{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h3>About CryptoPulse</h3>
+            </div>
+            <div class="card-body">
+                <h5>Project Overview</h5>
+                <p>CryptoPulse is a real-time cryptocurrency tracking application that provides live price updates, portfolio management, and price alerts for popular cryptocurrencies.</p>
+                
+                <h5>Key Features</h5>
+                <ul>
+                    <li><strong>Real-time Price Tracking:</strong> Live updates for Bitcoin, Ethereum, Solana, and more</li>
+                    <li><strong>User Authentication:</strong> Secure login system with role-based access</li>
+                    <li><strong>Price Alerts:</strong> Set custom price thresholds with visual indicators</li>
+                    <li><strong>Live Search:</strong> Filter and search through tracked cryptocurrencies</li>
+                    <li><strong>Admin Panel:</strong> Manage tracked coins and view user statistics</li>
+                    <li><strong>Portfolio Tracking:</strong> Virtual trading with fake money (coming soon)</li>
+                </ul>
+                
+                <h5>Technology Stack</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Backend</h6>
+                        <ul>
+                            <li>Python Flask - Web framework</li>
+                            <li>Flask Sessions - User authentication</li>
+                            <li>Werkzeug - Password hashing</li>
+                            <li>Requests - API calls</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Frontend</h6>
+                        <ul>
+                            <li>HTML5 & CSS3</li>
+                            <li>Bootstrap 5 - UI framework</li>
+                            <li>JavaScript - Dynamic interactions</li>
+                            <li>Chart.js - Data visualization</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <h5>Data Source</h5>
+                <p>Real-time cryptocurrency data is fetched from the <a href="https://www.coingecko.com/en/api" target="_blank">CoinGecko API</a>, which provides reliable and up-to-date market information for thousands of cryptocurrencies.</p>
+                
+                <h5>How It Works</h5>
+                <ol>
+                    <li><strong>Data Fetching:</strong> The application makes HTTP requests to CoinGecko API every 30 seconds</li>
+                    <li><strong>Real-time Updates:</strong> JavaScript automatically refreshes price data without page reload</li>
+                    <li><strong>User Management:</strong> Flask sessions handle secure user authentication and authorization</li>
+                    <li><strong>Price Alerts:</strong> Client-side JavaScript monitors prices and triggers visual alerts</li>
+                </ol>
+                
+                <div class="alert alert-info mt-4">
+                    <h6>Demo Credentials</h6>
+                    <p class="mb-0">
+                        <strong>Admin Access:</strong> Username: <code>admin</code>, Password: <code>admin123</code><br>
+                        <strong>Regular User:</strong> Create a new account via the signup page
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
