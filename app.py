@@ -9,15 +9,27 @@ import json
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this'
 
-# Dictionary-based "database"
+# Dictionary-based "database" with 4 user types (email-based)
 users_db = {
-    'admin': {
-        'password': generate_password_hash('admin123'),
+    'demo@user.com': {
+        'username': 'demo',
+        'password': generate_password_hash('demo123'),
+        'role': 'user'
+    },
+    'admin@crypto.com': {
+        'username': 'admin',
+        'password': generate_password_hash('demo123'),
         'role': 'admin'
     },
-    'superadmin': {
-        'password': generate_password_hash('super2024'),
-        'role': 'admin'
+    'analyst@crypto.com': {
+        'username': 'analyst',
+        'password': generate_password_hash('demo123'),
+        'role': 'analyst'
+    },
+    'mod@crypto.com': {
+        'username': 'moderator',
+        'password': generate_password_hash('demo123'),
+        'role': 'moderator'
     }
 }
 
@@ -159,84 +171,122 @@ def home():
     if 'username' not in session:
         return redirect(url_for('login'))
     
+    username = session['username']
+    
     # Get user's preferred currency from session or default to USD
     currency = session.get('currency', 'usd')
     prices = get_crypto_prices(tracked_coins, currency)
     
+    # Get user portfolio
+    initialize_user_portfolio(username)
+    portfolio = user_portfolios.get(username, {'balance': 10000, 'holdings': {}})
+    
+    # Calculate portfolio values
+    total_value = float(portfolio['balance'])
+    holdings_value = 0
+    
+    for coin_id, quantity in portfolio.get('holdings', {}).items():
+        if coin_id in prices:
+            coin_price = prices[coin_id][currency]
+            holdings_value += float(quantity) * coin_price
+    
+    total_value += holdings_value
+    
     return render_template('home.html', 
                          prices=prices, 
                          tracked_coins=tracked_coins,
+                         portfolio=portfolio,
+                         total_value=total_value,
+                         holdings_value=holdings_value,
                          currency=currency,
                          currency_symbol=supported_currencies[currency]['symbol'],
                          supported_currencies=supported_currencies)
 
-@app.route('/login')
+@app.route('/login', methods=['GET', 'POST'])
 def login():
+    if request.method == 'POST':
+        email = request.form.get('email', '').lower().strip()
+        password = request.form['password']
+        
+        # Check if user exists by email
+        if email not in users_db:
+            flash('Invalid email or password')
+            return redirect(url_for('login'))
+        
+        user_data = users_db[email]
+        
+        # Verify password
+        if not check_password_hash(user_data['password'], password):
+            flash('Invalid email or password')
+            return redirect(url_for('login'))
+        
+        # Get user role
+        user_role = user_data.get('role', 'user')
+        username = user_data.get('username', email.split('@')[0])
+        
+        # Set session data
+        session['email'] = email
+        session['username'] = username
+        session['role'] = user_role
+        
+        # Initialize portfolio for regular users
+        if user_role == 'user':
+            initialize_user_portfolio(username)
+        
+        # Redirect based on role
+        if user_role == 'admin':
+            flash(f'Welcome back, Admin {username}!')
+            return redirect(url_for('admin_dashboard'))
+        elif user_role == 'analyst':
+            flash(f'Welcome back, Analyst {username}!')
+            return redirect(url_for('analyst_dashboard'))
+        elif user_role == 'moderator':
+            flash(f'Welcome back, Moderator {username}!')
+            return redirect(url_for('moderator_dashboard'))
+        else:  # user role
+            flash(f'Welcome back, {username}!')
+            return redirect(url_for('home'))
+    
     return render_template('login.html')
 
 @app.route('/user_login', methods=['POST'])
 def user_login():
-    username = request.form['username']
-    password = request.form['password']
-    
-    if username in users_db and check_password_hash(users_db[username]['password'], password):
-        # Check if user is trying to access with admin account
-        if users_db[username].get('role') == 'admin':
-            flash('Admin accounts must use Admin Login')
-            return redirect(url_for('login') + '?type=admin')
-        
-        session['username'] = username
-        session['role'] = users_db[username].get('role', 'user')
-        session['login_type'] = 'user'
-        initialize_user_portfolio(username)
-        flash('Welcome back, ' + username + '!')
-        return redirect(url_for('home'))
-    else:
-        flash('Invalid user credentials')
-        return redirect(url_for('login') + '?type=user')
+    # Redirect to main login handler
+    return login()
 
 @app.route('/admin_login', methods=['POST'])
 def admin_login():
-    username = request.form['username']
-    password = request.form['password']
-    admin_code = request.form['admin_code']
-    
-    # Admin access code verification
-    if admin_code != 'CRYPTO2024':
-        flash('Invalid admin access code')
-        return redirect(url_for('login') + '?type=admin')
-    
-    if username in users_db and check_password_hash(users_db[username]['password'], password):
-        # Check if account has admin role
-        if users_db[username].get('role') != 'admin':
-            flash('This account does not have admin privileges')
-            return redirect(url_for('login') + '?type=admin')
-        
-        session['username'] = username
-        session['role'] = 'admin'
-        session['login_type'] = 'admin'
-        flash('Admin access granted. Welcome, ' + username + '!')
-        return redirect(url_for('admin_dashboard'))
-    else:
-        flash('Invalid admin credentials')
-        return redirect(url_for('login') + '?type=admin')
+    # Redirect to main login handler
+    return login()
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
         username = request.form['username']
+        email = request.form['email'].lower().strip()
         password = request.form['password']
+        confirm_password = request.form['confirm_password']
         
-        if username in users_db:
-            flash('Username already exists')
-        else:
-            users_db[username] = {
-                'password': generate_password_hash(password),
-                'role': 'user'
-            }
-            initialize_user_portfolio(username)
-            flash('Account created successfully')
-            return redirect(url_for('login'))
+        # Validate passwords match
+        if password != confirm_password:
+            flash('Passwords do not match')
+            return redirect(url_for('signup'))
+        
+        # Check if email already exists
+        if email in users_db:
+            flash('Email already registered')
+            return redirect(url_for('signup'))
+        
+        # Create new user account (always as 'user' role for signup)
+        users_db[email] = {
+            'username': username,
+            'password': generate_password_hash(password),
+            'role': 'user'
+        }
+        
+        initialize_user_portfolio(username)
+        flash(f'Account created successfully! Please login with {email}')
+        return redirect(url_for('login'))
     
     return render_template('signup.html')
 
@@ -263,7 +313,9 @@ def admin_dashboard():
     admin_stats = {
         'total_users': len(users_db),
         'admin_users': len([u for u in users_db.values() if u.get('role') == 'admin']),
-        'regular_users': len([u for u in users_db.values() if u.get('role') != 'admin']),
+        'regular_users': len([u for u in users_db.values() if u.get('role') == 'user']),
+        'analysts': len([u for u in users_db.values() if u.get('role') == 'analyst']),
+        'moderators': len([u for u in users_db.values() if u.get('role') == 'moderator']),
         'tracked_coins': len(tracked_coins),
         'total_portfolios': len(user_portfolios),
         'total_transactions': sum(len(transactions) for transactions in transaction_history.values())
@@ -273,6 +325,85 @@ def admin_dashboard():
                          tracked_coins=tracked_coins, 
                          users=list(users_db.keys()),
                          stats=admin_stats)
+
+@app.route('/analyst_dashboard')
+def analyst_dashboard():
+    if 'username' not in session or session.get('role') != 'analyst':
+        flash('Analyst access required')
+        return redirect(url_for('login') + '?type=analyst')
+    
+    username = session['username']
+    currency = session.get('currency', 'usd')
+    
+    # Get market data for analysis
+    prices = get_crypto_prices(tracked_coins, currency)
+    
+    # Calculate market statistics
+    analyst_stats = {
+        'total_coins_tracked': len(tracked_coins),
+        'coins_up_24h': len([c for c, p in prices.items() if p.get(f'{currency}_24h_change', 0) > 0]),
+        'coins_down_24h': len([c for c, p in prices.items() if p.get(f'{currency}_24h_change', 0) < 0]),
+        'total_market_cap': sum([p.get(f'{currency}_market_cap', 0) for p in prices.values()]),
+        'avg_24h_change': sum([p.get(f'{currency}_24h_change', 0) for p in prices.values()]) / len(prices) if prices else 0
+    }
+    
+    # Get top gainers and losers
+    sorted_by_change = sorted(prices.items(), key=lambda x: x[1].get(f'{currency}_24h_change', 0), reverse=True)
+    top_gainers = sorted_by_change[:5]
+    top_losers = sorted_by_change[-5:]
+    
+    return render_template('analyst_dashboard.html',
+                         username=username,
+                         stats=analyst_stats,
+                         prices=prices,
+                         tracked_coins=tracked_coins,
+                         top_gainers=top_gainers,
+                         top_losers=top_losers,
+                         currency=currency,
+                         currency_symbol=supported_currencies[currency]['symbol'])
+
+@app.route('/moderator_dashboard')
+def moderator_dashboard():
+    if 'username' not in session or session.get('role') != 'moderator':
+        flash('Moderator access required')
+        return redirect(url_for('login') + '?type=moderator')
+    
+    username = session['username']
+    
+    # Get user activity data
+    moderator_stats = {
+        'total_users': len(users_db),
+        'active_portfolios': len(user_portfolios),
+        'total_transactions': sum(len(transactions) for transactions in transaction_history.values()),
+        'users_by_role': {
+            'user': len([u for u in users_db.values() if u.get('role') == 'user']),
+            'admin': len([u for u in users_db.values() if u.get('role') == 'admin']),
+            'analyst': len([u for u in users_db.values() if u.get('role') == 'analyst']),
+            'moderator': len([u for u in users_db.values() if u.get('role') == 'moderator'])
+        }
+    }
+    
+    # Get recent transactions for monitoring
+    recent_transactions = []
+    for user, transactions in transaction_history.items():
+        for tx in transactions[-5:]:  # Last 5 transactions per user
+            recent_transactions.append({
+                'username': user,
+                'type': tx['type'],
+                'coin_id': tx['coin_id'],
+                'amount': tx['amount'],
+                'timestamp': tx['timestamp']
+            })
+    
+    # Sort by timestamp
+    recent_transactions.sort(key=lambda x: x['timestamp'], reverse=True)
+    recent_transactions = recent_transactions[:20]  # Top 20 recent
+    
+    return render_template('moderator_dashboard.html',
+                         username=username,
+                         stats=moderator_stats,
+                         users=users_db,
+                         recent_transactions=recent_transactions)
 
 @app.route('/test_chart')
 def test_chart():
@@ -373,20 +504,35 @@ def portfolio():
                          transactions=recent_transactions,
                          tracked_coins=tracked_coins)
 
+@app.route('/charts')
 @app.route('/charts/<coin_id>')
-def charts(coin_id):
+def charts(coin_id=None):
     if 'username' not in session:
         return redirect(url_for('login'))
     
+    currency = session.get('currency', 'usd')
+    
+    # Get all prices for the chart page
+    prices = get_crypto_prices(tracked_coins, currency)
+    
+    # If a specific coin is requested, get its historical data
+    historical_data = None
+    current_price = {}
     days = request.args.get('days', 7, type=int)
-    historical_data = get_historical_data(coin_id, days)
-    current_price = get_crypto_prices([coin_id])
+    
+    if coin_id:
+        historical_data = get_historical_data(coin_id, days, currency)
+        current_price = prices.get(coin_id, {})
     
     return render_template('charts.html', 
-                         coin_id=coin_id, 
+                         coin_id=coin_id,
                          historical_data=historical_data,
-                         current_price=current_price.get(coin_id, {}),
-                         days=days)
+                         current_price=current_price,
+                         prices=prices,
+                         tracked_coins=tracked_coins,
+                         days=days,
+                         currency=currency,
+                         currency_symbol=supported_currencies[currency]['symbol'])
 
 @app.route('/api/prices')
 def api_prices():

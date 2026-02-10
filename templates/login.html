@@ -4,172 +4,142 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header text-center">
-                <h3>Welcome to CryptoPulse</h3>
-                <p class="text-muted mb-0">Choose your login type</p>
+    <div class="col-md-6">
+        <div class="card shadow-lg">
+            <div class="card-header text-center bg-primary text-white">
+                <h3><i class="fas fa-lock me-2"></i>CryptoPulse Login</h3>
+                <p class="mb-0 small">Enter your credentials to access your account</p>
             </div>
+            <div class="card-body p-4">
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>{{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" action="{{ url_for('login') }}">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">
+                            <i class="fas fa-envelope me-2"></i>Email Address
+                        </label>
+                        <input type="email" 
+                               class="form-control form-control-lg" 
+                               id="email" 
+                               name="email" 
+                               placeholder="Enter your email"
+                               required 
+                               autofocus>
+                        <small class="text-muted">Your role will be automatically detected</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-key me-2"></i>Password
+                        </label>
+                        <input type="password" 
+                               class="form-control form-control-lg" 
+                               id="password" 
+                               name="password" 
+                               placeholder="Enter your password"
+                               required>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember">
+                        <label class="form-check-label" for="remember">
+                            Remember me
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </button>
+                </form>
+                
+                <hr class="my-4">
+                
+                <div class="text-center">
+                    <p class="mb-2">Don't have an account?</p>
+                    <a href="{{ url_for('signup') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-user-plus me-2"></i>Sign Up
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card-footer bg-light">
+                <div class="row text-center small">
+                    <div class="col-12 mb-2">
+                        <strong>Demo Accounts:</strong>
+                    </div>
+                    <div class="col-6 col-md-3 mb-2">
+                        <span class="badge bg-primary">User</span><br>
+                        <small>demo@user.com</small>
+                    </div>
+                    <div class="col-6 col-md-3 mb-2">
+                        <span class="badge bg-warning">Admin</span><br>
+                        <small>admin@crypto.com</small>
+                    </div>
+                    <div class="col-6 col-md-3 mb-2">
+                        <span class="badge bg-info">Analyst</span><br>
+                        <small>analyst@crypto.com</small>
+                    </div>
+                    <div class="col-6 col-md-3 mb-2">
+                        <span class="badge bg-success">Moderator</span><br>
+                        <small>mod@crypto.com</small>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <small class="text-muted">Password for all: <code>demo123</code></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Role Information -->
+        <div class="card mt-3">
             <div class="card-body">
-                <!-- Login Type Selection -->
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <div class="card border-primary h-100" id="userLoginCard">
-                            <div class="card-body text-center">
-                                <i class="fas fa-user fa-3x text-primary mb-3"></i>
-                                <h5 class="card-title">User Login</h5>
-                                <p class="card-text">Access portfolio, trading, and market data</p>
-                                <button class="btn btn-primary" onclick="showUserLogin()">
-                                    Login as User
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card border-warning h-100" id="adminLoginCard">
-                            <div class="card-body text-center">
-                                <i class="fas fa-user-shield fa-3x text-warning mb-3"></i>
-                                <h5 class="card-title">Admin Login</h5>
-                                <p class="card-text">Manage system, users, and configurations</p>
-                                <button class="btn btn-warning" onclick="showAdminLogin()">
-                                    Login as Admin
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- User Login Form -->
-                <div id="userLoginForm" style="display: none;">
-                    <div class="d-flex align-items-center mb-3">
-                        <button class="btn btn-sm btn-outline-secondary me-2" onclick="showLoginSelection()">
-                            <i class="fas fa-arrow-left"></i>
-                        </button>
-                        <h4 class="mb-0">
-                            <i class="fas fa-user text-primary me-2"></i>
-                            User Login
-                        </h4>
-                    </div>
-                    <form method="POST" action="{{ url_for('user_login') }}">
-                        <input type="hidden" name="login_type" value="user">
-                        <div class="mb-3">
-                            <label for="user_username" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="user_username" name="username" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="user_password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="user_password" name="password" required>
-                        </div>
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="user_remember">
-                            <label class="form-check-label" for="user_remember">
-                                Remember me
-                            </label>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Login as User</button>
-                    </form>
-                    <div class="text-center mt-3">
-                        <p>Don't have an account? <a href="{{ url_for('signup') }}">Sign up here</a></p>
-                    </div>
-                </div>
-
-                <!-- Admin Login Form -->
-                <div id="adminLoginForm" style="display: none;">
-                    <div class="d-flex align-items-center mb-3">
-                        <button class="btn btn-sm btn-outline-secondary me-2" onclick="showLoginSelection()">
-                            <i class="fas fa-arrow-left"></i>
-                        </button>
-                        <h4 class="mb-0">
-                            <i class="fas fa-user-shield text-warning me-2"></i>
-                            Admin Login
-                        </h4>
-                    </div>
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Admin Access:</strong> This area is restricted to authorized administrators only.
-                    </div>
-                    <form method="POST" action="{{ url_for('admin_login') }}">
-                        <input type="hidden" name="login_type" value="admin">
-                        <div class="mb-3">
-                            <label for="admin_username" class="form-label">Admin Username</label>
-                            <input type="text" class="form-control" id="admin_username" name="username" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="admin_password" class="form-label">Admin Password</label>
-                            <input type="password" class="form-control" id="admin_password" name="password" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="admin_code" class="form-label">Admin Access Code</label>
-                            <input type="text" class="form-control" id="admin_code" name="admin_code" placeholder="Enter admin access code" required>
-                            <small class="text-muted">Additional security code required for admin access</small>
-                        </div>
-                        <button type="submit" class="btn btn-warning w-100">Login as Admin</button>
-                    </form>
-                    <div class="text-center mt-3">
-                        <small class="text-muted">Demo: admin / admin123 / CRYPTO2024</small>
-                    </div>
-                </div>
+                <h6 class="card-title"><i class="fas fa-info-circle me-2"></i>How It Works</h6>
+                <p class="card-text small mb-0">
+                    Simply enter your email and password. The system will automatically detect your role 
+                    and redirect you to the appropriate dashboard:
+                </p>
+                <ul class="small mt-2 mb-0">
+                    <li><strong>@user.com</strong> → User Dashboard (Trading & Portfolio)</li>
+                    <li><strong>@crypto.com (admin)</strong> → Admin Dashboard (System Management)</li>
+                    <li><strong>@crypto.com (analyst)</strong> → Analyst Dashboard (Market Analysis)</li>
+                    <li><strong>@crypto.com (mod)</strong> → Moderator Dashboard (User Management)</li>
+                </ul>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-function showUserLogin() {
-    document.getElementById('userLoginCard').classList.add('border-primary', 'bg-light');
-    document.getElementById('adminLoginCard').classList.remove('border-warning', 'bg-light');
-    document.querySelector('.row.mb-4').style.display = 'none';
-    document.getElementById('userLoginForm').style.display = 'block';
-    document.getElementById('adminLoginForm').style.display = 'none';
-}
-
-function showAdminLogin() {
-    document.getElementById('adminLoginCard').classList.add('border-warning', 'bg-light');
-    document.getElementById('userLoginCard').classList.remove('border-primary', 'bg-light');
-    document.querySelector('.row.mb-4').style.display = 'none';
-    document.getElementById('userLoginForm').style.display = 'none';
-    document.getElementById('adminLoginForm').style.display = 'block';
-}
-
-function showLoginSelection() {
-    document.querySelector('.row.mb-4').style.display = 'flex';
-    document.getElementById('userLoginForm').style.display = 'none';
-    document.getElementById('adminLoginForm').style.display = 'none';
-    document.getElementById('userLoginCard').classList.remove('border-primary', 'bg-light');
-    document.getElementById('adminLoginCard').classList.remove('border-warning', 'bg-light');
-}
-
-// Auto-focus on username when form is shown
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if there's a login type in URL params
-    const urlParams = new URLSearchParams(window.location.search);
-    const loginType = urlParams.get('type');
-    
-    if (loginType === 'admin') {
-        showAdminLogin();
-    } else if (loginType === 'user') {
-        showUserLogin();
-    }
-});
-</script>
-
 <style>
-.card:hover {
-    transform: translateY(-2px);
-    transition: transform 0.3s ease;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+.card {
+    border: none;
+    border-radius: 15px;
 }
 
-.fa-3x {
-    font-size: 3rem;
+.card-header {
+    border-radius: 15px 15px 0 0 !important;
 }
 
-.border-primary.bg-light {
-    background-color: rgba(13, 110, 253, 0.1) !important;
+.form-control-lg {
+    border-radius: 10px;
 }
 
-.border-warning.bg-light {
-    background-color: rgba(255, 193, 7, 0.1) !important;
+.btn-lg {
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
 }
 </style>
 {% endblock %}

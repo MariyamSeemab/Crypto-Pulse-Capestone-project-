@@ -5,54 +5,104 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="text-center">Create Account</h3>
-                <p class="text-center text-muted mb-0">Join CryptoPulse community</p>
+        <div class="card shadow-lg">
+            <div class="card-header text-center bg-success text-white">
+                <h3><i class="fas fa-user-plus me-2"></i>Create Account</h3>
+                <p class="mb-0 small">Join CryptoPulse community</p>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>{{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
-                    <strong>Account Type:</strong> You are creating a <strong>User Account</strong> with access to portfolio management, trading, and market data.
+                    <strong>Account Type:</strong> Creating a <strong>User Account</strong> with portfolio management and trading access.
                 </div>
                 
                 <form method="POST">
                     <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
-                        <small class="text-muted">Choose a unique username (3-20 characters)</small>
+                        <label for="username" class="form-label">
+                            <i class="fas fa-user me-2"></i>Username
+                        </label>
+                        <input type="text" 
+                               class="form-control form-control-lg" 
+                               id="username" 
+                               name="username" 
+                               placeholder="Choose a username"
+                               required>
+                        <small class="text-muted">3-20 characters, letters and numbers only</small>
                     </div>
+                    
                     <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        <label for="email" class="form-label">
+                            <i class="fas fa-envelope me-2"></i>Email Address
+                        </label>
+                        <input type="email" 
+                               class="form-control form-control-lg" 
+                               id="email" 
+                               name="email" 
+                               placeholder="your.email@example.com"
+                               required>
+                        <small class="text-muted">Use @user.com domain for regular user accounts</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-key me-2"></i>Password
+                        </label>
+                        <input type="password" 
+                               class="form-control form-control-lg" 
+                               id="password" 
+                               name="password" 
+                               placeholder="Create a strong password"
+                               required>
                         <small class="text-muted">Minimum 6 characters</small>
                     </div>
+                    
                     <div class="mb-3">
-                        <label for="confirm_password" class="form-label">Confirm Password</label>
-                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        <label for="confirm_password" class="form-label">
+                            <i class="fas fa-check me-2"></i>Confirm Password
+                        </label>
+                        <input type="password" 
+                               class="form-control form-control-lg" 
+                               id="confirm_password" 
+                               name="confirm_password" 
+                               placeholder="Re-enter your password"
+                               required>
                     </div>
+                    
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="terms" required>
                         <label class="form-check-label" for="terms">
                             I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms of Service</a>
                         </label>
                     </div>
-                    <button type="submit" class="btn btn-success w-100">
-                        <i class="fas fa-user-plus me-2"></i>
-                        Create User Account
+                    
+                    <button type="submit" class="btn btn-success btn-lg w-100">
+                        <i class="fas fa-user-plus me-2"></i>Create Account
                     </button>
                 </form>
                 
-                <div class="text-center mt-4">
-                    <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+                <hr class="my-4">
+                
+                <div class="text-center">
+                    <p>Already have an account? <a href="{{ url_for('login') }}" class="btn btn-outline-primary">Login here</a></p>
                 </div>
-                
-                <hr>
-                
-                <div class="alert alert-warning">
+            </div>
+            
+            <div class="card-footer bg-light">
+                <div class="alert alert-warning mb-0">
                     <i class="fas fa-user-shield me-2"></i>
-                    <strong>Need Admin Access?</strong> Admin accounts are created by existing administrators. 
-                    Contact your system administrator for admin privileges.
+                    <strong>Need Admin/Analyst/Moderator Access?</strong><br>
+                    <small>Special role accounts are created by administrators. Contact your system admin for elevated privileges.</small>
                 </div>
             </div>
         </div>
@@ -72,7 +122,7 @@
                 <p>By using CryptoPulse, you agree to the following terms:</p>
                 <ul>
                     <li>This is a demo application for educational purposes</li>
-                    <li>All trading is done with virtual money</li>
+                    <li>All trading is done with virtual money ($10,000 starting balance)</li>
                     <li>Real cryptocurrency transactions are not supported</li>
                     <li>Price data is provided for informational purposes only</li>
                     <li>Users are responsible for their account security</li>
@@ -106,6 +156,8 @@ document.getElementById('username').addEventListener('input', function() {
         this.setCustomValidity('Username must be at least 3 characters');
     } else if (username.length > 20) {
         this.setCustomValidity('Username must be less than 20 characters');
+    } else if (!/^[a-zA-Z0-9]+$/.test(username)) {
+        this.setCustomValidity('Username can only contain letters and numbers');
     } else {
         this.setCustomValidity('');
     }
@@ -120,5 +172,36 @@ document.getElementById('password').addEventListener('input', function() {
         this.setCustomValidity('');
     }
 });
+
+document.getElementById('email').addEventListener('input', function() {
+    const email = this.value.toLowerCase();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!emailPattern.test(email)) {
+        this.setCustomValidity('Please enter a valid email address');
+    } else {
+        this.setCustomValidity('');
+    }
+});
 </script>
+
+<style>
+.card {
+    border: none;
+    border-radius: 15px;
+}
+
+.card-header {
+    border-radius: 15px 15px 0 0 !important;
+}
+
+.form-control-lg {
+    border-radius: 10px;
+}
+
+.btn-lg {
+    border-radius: 10px;
+    padding: 12px;
+}
+</style>
 {% endblock %}

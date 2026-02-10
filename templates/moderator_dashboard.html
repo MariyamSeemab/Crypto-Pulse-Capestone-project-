@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Moderator Dashboard - CryptoPulse{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-user-cog text-success me-2"></i>Moderator Dashboard</h2>
+    <div>
+        <span class="badge bg-success">Moderator: {{ username }}</span>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-users me-2"></i>Total Users</h6>
+                <h3 class="mb-0">{{ stats.total_users }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-wallet me-2"></i>Active Portfolios</h6>
+                <h3 class="mb-0">{{ stats.active_portfolios }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-exchange-alt me-2"></i>Total Transactions</h6>
+                <h3 class="mb-0">{{ stats.total_transactions }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-user-shield me-2"></i>Staff Members</h6>
+                <h3 class="mb-0">{{ stats.users_by_role.admin + stats.users_by_role.analyst + stats.users_by_role.moderator }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Users by Role -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Users by Role</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="p-3 border rounded">
+                            <i class="fas fa-user fa-2x text-primary mb-2"></i>
+                            <h4>{{ stats.users_by_role.user }}</h4>
+                            <small class="text-muted">Regular Users</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="p-3 border rounded">
+                            <i class="fas fa-user-shield fa-2x text-warning mb-2"></i>
+                            <h4>{{ stats.users_by_role.admin }}</h4>
+                            <small class="text-muted">Administrators</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 border rounded">
+                            <i class="fas fa-chart-line fa-2x text-info mb-2"></i>
+                            <h4>{{ stats.users_by_role.analyst }}</h4>
+                            <small class="text-muted">Analysts</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 border rounded">
+                            <i class="fas fa-user-cog fa-2x text-success mb-2"></i>
+                            <h4>{{ stats.users_by_role.moderator }}</h4>
+                            <small class="text-muted">Moderators</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Moderation Tools</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="#" class="list-group-item list-group-item-action" data-bs-toggle="modal" data-bs-target="#userManagementModal">
+                        <i class="fas fa-users-cog me-2"></i>Manage Users
+                        <span class="badge bg-primary float-end">{{ stats.total_users }}</span>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <i class="fas fa-flag me-2"></i>Review Flagged Content
+                        <span class="badge bg-danger float-end">0</span>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <i class="fas fa-comments me-2"></i>Monitor Activity
+                        <span class="badge bg-success float-end">Active</span>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <i class="fas fa-file-alt me-2"></i>Generate Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Transactions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent User Activity</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_transactions %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Coin</th>
+                                <th>Amount</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tx in recent_transactions %}
+                            <tr>
+                                <td><i class="fas fa-user me-1"></i>{{ tx.username }}</td>
+                                <td>
+                                    <span class="badge {% if tx.type == 'buy' %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ tx.type.upper() }}
+                                    </span>
+                                </td>
+                                <td class="fw-bold">{{ tx.coin_id.title() }}</td>
+                                <td>${{ "%.2f"|format(tx.amount) }}</td>
+                                <td><small>{{ tx.timestamp[:19] }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No recent transactions</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-list me-2"></i>All Users</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for username, user_data in users.items() %}
+                            <tr>
+                                <td><i class="fas fa-user me-2"></i>{{ username }}</td>
+                                <td>
+                                    {% if user_data.role == 'admin' %}
+                                    <span class="badge bg-warning">Admin</span>
+                                    {% elif user_data.role == 'analyst' %}
+                                    <span class="badge bg-info">Analyst</span>
+                                    {% elif user_data.role == 'moderator' %}
+                                    <span class="badge bg-success">Moderator</span>
+                                    {% else %}
+                                    <span class="badge bg-primary">User</span>
+                                    {% endif %}
+                                </td>
+                                <td><span class="badge bg-success">Active</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" data-username="{{ username }}">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" data-username="{{ username }}">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Management Modal -->
+<div class="modal fade" id="userManagementModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-users-cog me-2"></i>User Management</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>User management features:</p>
+                <ul>
+                    <li>View user details and activity</li>
+                    <li>Monitor user transactions</li>
+                    <li>Review user portfolios</li>
+                    <li>Generate user reports</li>
+                </ul>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Advanced user management features coming soon!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -17,6 +17,63 @@
     </div>
 </div>
 
+<!-- Real-time System Status -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-heartbeat me-2"></i>
+                    Real-time System Status
+                    <span class="badge bg-success ms-2" id="systemStatus">Online</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 text-success" id="apiStatus">
+                                <i class="fas fa-check-circle"></i> API Connected
+                            </div>
+                            <small class="text-muted">CoinGecko API Status</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 text-info" id="activeUsers">
+                                <i class="fas fa-users"></i> <span id="userCount">{{ stats.total_users }}</span>
+                            </div>
+                            <small class="text-muted">Active Users</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 text-warning" id="systemLoad">
+                                <i class="fas fa-tachometer-alt"></i> <span id="loadPercent">12%</span>
+                            </div>
+                            <small class="text-muted">System Load</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 text-primary" id="uptime">
+                                <i class="fas fa-clock"></i> <span id="uptimeValue">2h 15m</span>
+                            </div>
+                            <small class="text-muted">Uptime</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 88%" id="healthBar"></div>
+                    </div>
+                    <small class="text-muted">Overall System Health: <span id="healthPercent">88%</span></small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Admin Statistics Cards -->
 <div class="row mb-4">
     <div class="col-md-2">
@@ -87,7 +144,7 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
-                    <button class="btn btn-outline-primary" onclick="location.href='{{ url_for('admin') }}'">
+                    <button class="btn btn-outline-primary" onclick="navigateToAdmin()">
                         <i class="fas fa-coins me-2"></i>
                         Manage Tracked Coins
                     </button>
@@ -235,6 +292,10 @@
 </div>
 
 <script>
+function navigateToAdmin() {
+    window.location.href = '{{ url_for("admin") }}';
+}
+
 function viewUserDetails(username) {
     const content = document.getElementById('userDetailsContent');
     content.innerHTML = `

@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Analyst Dashboard - CryptoPulse{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-chart-line text-info me-2"></i>Analyst Dashboard</h2>
+    <div>
+        <span class="badge bg-info">Analyst: {{ username }}</span>
+    </div>
+</div>
+
+<!-- Market Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-coins me-2"></i>Tracked Coins</h6>
+                <h3 class="mb-0">{{ stats.total_coins_tracked }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-arrow-up me-2"></i>Coins Up 24h</h6>
+                <h3 class="mb-0">{{ stats.coins_up_24h }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-arrow-down me-2"></i>Coins Down 24h</h6>
+                <h3 class="mb-0">{{ stats.coins_down_24h }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-percentage me-2"></i>Avg 24h Change</h6>
+                <h3 class="mb-0">{{ "%.2f"|format(stats.avg_24h_change) }}%</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Gainers and Losers -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Top 5 Gainers (24h)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Coin</th>
+                                <th>Price</th>
+                                <th>24h Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for coin_id, data in top_gainers %}
+                            <tr>
+                                <td class="fw-bold">{{ coin_id.title() }}</td>
+                                <td>{{ currency_symbol }}{{ "%.2f"|format(data[currency]) }}</td>
+                                <td class="text-success">
+                                    <i class="fas fa-arrow-up"></i>
+                                    {{ "%.2f"|format(data[currency + '_24h_change']) }}%
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Top 5 Losers (24h)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Coin</th>
+                                <th>Price</th>
+                                <th>24h Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for coin_id, data in top_losers %}
+                            <tr>
+                                <td class="fw-bold">{{ coin_id.title() }}</td>
+                                <td>{{ currency_symbol }}{{ "%.2f"|format(data[currency]) }}</td>
+                                <td class="text-danger">
+                                    <i class="fas fa-arrow-down"></i>
+                                    {{ "%.2f"|format(data[currency + '_24h_change']) }}%
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Market Overview -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Complete Market Overview</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Coin</th>
+                                <th>Price</th>
+                                <th>24h Change</th>
+                                <th>Market Cap</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for coin_id in tracked_coins %}
+                            {% if coin_id in prices %}
+                            {% set coin_data = prices[coin_id] %}
+                            <tr>
+                                <td class="fw-bold">{{ coin_id.title() }}</td>
+                                <td>{{ currency_symbol }}{{ "%.2f"|format(coin_data[currency]) }}</td>
+                                <td class="{% if coin_data[currency + '_24h_change'] >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {% if coin_data[currency + '_24h_change'] >= 0 %}
+                                    <i class="fas fa-arrow-up"></i>
+                                    {% else %}
+                                    <i class="fas fa-arrow-down"></i>
+                                    {% endif %}
+                                    {{ "%.2f"|format(coin_data[currency + '_24h_change']) }}%
+                                </td>
+                                <td>{{ currency_symbol }}{{ "{:,.0f}".format(coin_data.get(currency + '_market_cap', 0)) }}</td>
+                                <td>
+                                    <a href="{{ url_for('charts', coin_id=coin_id) }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                        <i class="fas fa-chart-area"></i> View Chart
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analysis Tools -->
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-tools me-2"></i>Analysis Tools</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="{{ url_for('charts') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-chart-line me-2"></i>Price Charts
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <i class="fas fa-calculator me-2"></i>Technical Indicators
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <i class="fas fa-file-export me-2"></i>Export Data
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <i class="fas fa-file-pdf me-2"></i>Generate Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Analyst Notes</h6>
+            </div>
+            <div class="card-body">
+                <h6>Market Analysis Summary</h6>
+                <p class="text-muted">
+                    Current market shows {{ stats.coins_up_24h }} coins with positive momentum and 
+                    {{ stats.coins_down_24h }} coins experiencing decline over the last 24 hours.
+                    Average market change is {{ "%.2f"|format(stats.avg_24h_change) }}%.
+                </p>
+                <hr>
+                <h6>Key Observations</h6>
+                <ul>
+                    <li>Monitor top gainers for potential profit-taking opportunities</li>
+                    <li>Analyze losers for potential buying opportunities</li>
+                    <li>Track market cap changes for trend identification</li>
+                    <li>Use technical indicators for entry/exit points</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
