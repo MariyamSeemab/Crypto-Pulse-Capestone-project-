@@ -6,8 +6,36 @@ import os
 import sqlite3
 import json
 
+# AWS SDK
+try:
+    import boto3
+    from botocore.exceptions import ClientError
+    AWS_AVAILABLE = True
+except ImportError:
+    AWS_AVAILABLE = False
+    print("Warning: boto3 not installed. AWS SNS notifications will be disabled.")
+
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this'
+
+# AWS SNS Configuration
+AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
+SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN', None)
+
+# Initialize SNS client if AWS is available
+if AWS_AVAILABLE and SNS_TOPIC_ARN:
+    try:
+        sns_client = boto3.client('sns', region_name=AWS_REGION)
+        print(f"✅ AWS SNS initialized for region: {AWS_REGION}")
+    except Exception as e:
+        sns_client = None
+        print(f"⚠️ AWS SNS initialization failed: {e}")
+else:
+    sns_client = None
+    if not AWS_AVAILABLE:
+        print("⚠️ AWS SNS disabled: boto3 not installed")
+    elif not SNS_TOPIC_ARN:
+        print("⚠️ AWS SNS disabled: SNS_TOPIC_ARN not configured")
 
 # Dictionary-based "database" with 4 user types (email-based)
 users_db = {
@@ -63,6 +91,128 @@ price_alerts = {}
 
 # Transaction history
 transaction_history = {}
+
+def send_sns_notification(subject, message, user_email=None):
+    """
+    Send email notification via AWS SNS
+    
+    Args:
+        subject: Email subject line
+        message: Email body content
+        user_email: Optional user email for personalized notifications
+    
+    Returns:
+        bool: True if notification sent successfully, False otherwise
+    """
+    if not sns_client or not SNS_TOPIC_ARN:
+        print(f"📧 [MOCK] Email would be sent: {subject}")
+        print(f"   To: {user_email or 'Topic subscribers'}")
+        print(f"   Message: {message[:100]}...")
+        return False
+    
+    try:
+        # If user email is provided, try to send directly
+        if user_email:
+            try:
+                response = sns_client.publish(
+                    TopicArn=SNS_TOPIC_ARN,
+                    Subject=subject,
+                    Message=message,
+                    MessageAttributes={
+                        'email': {
+                            'DataType': 'String',
+                            'StringValue': user_email
+                        }
+                    }
+                )
+                print(f"✅ SNS notification sent to {user_email}: {response['MessageId']}")
+                return True
+            except ClientError as e:
+                print(f"⚠️ Failed to send to {user_email}, sending to topic: {e}")
+        
+        # Fallback to topic publish
+        response = sns_client.publish(
+            TopicArn=SNS_TOPIC_ARN,
+            Subject=subject,
+            Message=message
+        )
+        print(f"✅ SNS notification sent to topic: {response['MessageId']}")
+        return True
+        
+    except ClientError as e:
+        print(f"❌ SNS notification failed: {e}")
+        return False
+    except Exception as e:
+        print(f"❌ Unexpected error sending SNS: {e}")
+        return False
+
+def format_transaction_email(transaction_type, username, user_email, coin_id, quantity, price, amount):
+    """
+    Format a professional transaction notification email
+    
+    Args:
+        transaction_type: 'buy' or 'sell'
+        username: User's display name
+        user_email: User's email address
+        coin_id: Cryptocurrency ID
+        quantity: Amount of crypto
+        price: Price per unit
+        amount: Total transaction amount
+    
+    Returns:
+        tuple: (subject, message)
+    """
+    action = "Purchase" if transaction_type == "buy" else "Sale"
+    emoji = "🛒" if transaction_type == "buy" else "💰"
+    
+    subject = f"{emoji} CryptoPulse - {action} Confirmation: {coin_id.upper()}"
+    
+    message = f"""
+╔══════════════════════════════════════════════════════════╗
+║          CRYPTOPULSE TRANSACTION CONFIRMATION            ║
+╚══════════════════════════════════════════════════════════╝
+
+Hello {username},
+
+Your cryptocurrency {transaction_type.upper()} transaction has been completed successfully!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TRANSACTION DETAILS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Transaction Type:  {action.upper()}
+Cryptocurrency:    {coin_id.upper()}
+Quantity:          {quantity:.8f} {coin_id.upper()}
+Price per Unit:    ${price:.2f}
+Total Amount:      ${amount:.2f}
+Transaction Time:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 View your updated portfolio: http://127.0.0.1:5000/portfolio
+📈 Check live prices: http://127.0.0.1:5000/
+📰 Latest crypto news: http://127.0.0.1:5000/news
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  IMPORTANT NOTICE:
+This is a demo trading platform. All transactions use virtual money.
+No real cryptocurrency or funds are involved.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Questions or concerns? Contact support@cryptopulse.demo
+
+Thank you for using CryptoPulse!
+
+Best regards,
+The CryptoPulse Team
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+© 2026 CryptoPulse - Virtual Cryptocurrency Trading Platform
+    """
+    
+    return subject, message
 
 def get_crypto_prices(coin_ids, currency='usd'):
     """Fetch current prices from CoinGecko API in specified currency"""
@@ -598,6 +748,7 @@ def buy_coin():
         return jsonify({'error': 'Unauthorized'}), 403
     
     username = session['username']
+    user_email = session.get('email', '')
     initialize_user_portfolio(username)
     
     coin_id = request.json.get('coin_id')
@@ -637,6 +788,12 @@ def buy_coin():
     }
     transaction_history[username].append(transaction)
     
+    # Send SNS email notification
+    subject, message = format_transaction_email(
+        'buy', username, user_email, coin_id, quantity, current_price, amount_usd
+    )
+    send_sns_notification(subject, message, user_email)
+    
     return jsonify({'success': True, 'transaction': transaction})
 
 @app.route('/api/sell_coin', methods=['POST'])
@@ -645,6 +802,7 @@ def sell_coin():
         return jsonify({'error': 'Unauthorized'}), 403
     
     username = session['username']
+    user_email = session.get('email', '')
     initialize_user_portfolio(username)
     
     coin_id = request.json.get('coin_id')
@@ -682,6 +840,12 @@ def sell_coin():
         'timestamp': datetime.now().isoformat()
     }
     transaction_history[username].append(transaction)
+    
+    # Send SNS email notification
+    subject, message = format_transaction_email(
+        'sell', username, user_email, coin_id, quantity, current_price, amount_usd
+    )
+    send_sns_notification(subject, message, user_email)
     
     return jsonify({'success': True, 'transaction': transaction})
 
