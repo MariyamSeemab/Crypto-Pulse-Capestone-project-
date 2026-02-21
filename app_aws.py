@@ -26,7 +26,7 @@ transactions_table = dynamodb.Table('CryptoPulse_Transactions')
 price_alerts_table = dynamodb.Table('CryptoPulse_PriceAlerts')
 
 # SNS Topic ARN
-SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN', 'arn:aws:sns:us-east-1:123456789012:cryptopulse-notifications')
+SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN', 'arn:aws:sns:us-east-1:216989138822:capestone_project')
 
 # S3 Bucket for file storage
 S3_BUCKET = os.environ.get('S3_BUCKET', 'cryptopulse-files')
