@@ -16,7 +16,15 @@ except ImportError:
     print("Warning: boto3 not installed. AWS SNS notifications will be disabled.")
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-this'
+
+# Production-ready secret key configuration
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
+
+# Session configuration for production
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True if using HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 
 # AWS SNS Configuration
 AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
@@ -91,6 +99,9 @@ price_alerts = {}
 
 # Transaction history
 transaction_history = {}
+
+# User favorites
+user_favorites = {}
 
 def send_sns_notification(subject, message, user_email=None):
     """
@@ -318,39 +329,54 @@ def initialize_user_portfolio(username):
 
 @app.route('/')
 def home():
-    if 'username' not in session:
+    try:
+        # Check if user is logged in
+        if 'username' not in session or 'email' not in session:
+            flash('Please log in to access the dashboard')
+            return redirect(url_for('login'))
+        
+        username = session.get('username')
+        email = session.get('email')
+        
+        # Double-check user still exists in database
+        if email not in users_db:
+            session.clear()
+            flash('Session expired. Please log in again.')
+            return redirect(url_for('login'))
+        
+        # Get user's preferred currency from session or default to USD
+        currency = session.get('currency', 'usd')
+        prices = get_crypto_prices(tracked_coins, currency)
+        
+        # Get user portfolio
+        initialize_user_portfolio(username)
+        portfolio = user_portfolios.get(username, {'balance': 10000, 'holdings': {}})
+        
+        # Calculate portfolio values
+        total_value = float(portfolio['balance'])
+        holdings_value = 0
+        
+        for coin_id, quantity in portfolio.get('holdings', {}).items():
+            if coin_id in prices:
+                coin_price = prices[coin_id][currency]
+                holdings_value += float(quantity) * coin_price
+        
+        total_value += holdings_value
+        
+        return render_template('home.html', 
+                             prices=prices, 
+                             tracked_coins=tracked_coins,
+                             portfolio=portfolio,
+                             total_value=total_value,
+                             holdings_value=holdings_value,
+                             currency=currency,
+                             currency_symbol=supported_currencies[currency]['symbol'],
+                             supported_currencies=supported_currencies)
+    except Exception as e:
+        print(f"Error in home route: {e}")
+        flash('An error occurred. Please try logging in again.')
+        session.clear()
         return redirect(url_for('login'))
-    
-    username = session['username']
-    
-    # Get user's preferred currency from session or default to USD
-    currency = session.get('currency', 'usd')
-    prices = get_crypto_prices(tracked_coins, currency)
-    
-    # Get user portfolio
-    initialize_user_portfolio(username)
-    portfolio = user_portfolios.get(username, {'balance': 10000, 'holdings': {}})
-    
-    # Calculate portfolio values
-    total_value = float(portfolio['balance'])
-    holdings_value = 0
-    
-    for coin_id, quantity in portfolio.get('holdings', {}).items():
-        if coin_id in prices:
-            coin_price = prices[coin_id][currency]
-            holdings_value += float(quantity) * coin_price
-    
-    total_value += holdings_value
-    
-    return render_template('home.html', 
-                         prices=prices, 
-                         tracked_coins=tracked_coins,
-                         portfolio=portfolio,
-                         total_value=total_value,
-                         holdings_value=holdings_value,
-                         currency=currency,
-                         currency_symbol=supported_currencies[currency]['symbol'],
-                         supported_currencies=supported_currencies)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -744,57 +770,101 @@ def remove_coin():
 
 @app.route('/api/buy_coin', methods=['POST'])
 def buy_coin():
-    if 'username' not in session:
-        return jsonify({'error': 'Unauthorized'}), 403
+    try:
+        if 'username' not in session:
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        username = session['username']
+        user_email = session.get('email', '')
+        initialize_user_portfolio(username)
+        
+        # Debug logging
+        print(f"=== BUY COIN REQUEST ===")
+        print(f"Request data: {request.json}")
+        print(f"Request content type: {request.content_type}")
+        
+        if not request.json:
+            print("ERROR: No JSON data in request")
+            return jsonify({'error': 'No data provided'}), 400
+        
+        coin_id = request.json.get('coin_id')
+        amount_str = request.json.get('amount', 0)
+        
+        print(f"Coin ID: {coin_id}, Amount: {amount_str}")
+        
+        if not coin_id:
+            print("ERROR: No coin_id provided")
+            return jsonify({'error': 'No coin selected'}), 400
+        
+        try:
+            amount_usd = float(amount_str)
+        except (ValueError, TypeError) as e:
+            print(f"ERROR: Invalid amount format: {e}")
+            return jsonify({'error': 'Invalid amount format'}), 400
+        
+        print(f"Buying {coin_id} for ${amount_usd}")
+        
+        if amount_usd <= 0:
+            print(f"ERROR: Invalid amount {amount_usd}")
+            return jsonify({'error': 'Amount must be greater than 0'}), 400
+        
+        # Get current price
+        print(f"Fetching price for {coin_id}...")
+        prices = get_crypto_prices([coin_id])
+        print(f"Prices fetched: {prices}")
+        
+        if not prices or coin_id not in prices:
+            print(f"ERROR: Coin {coin_id} not found in prices response")
+            return jsonify({'error': f'Could not fetch price for {coin_id}'}), 400
+        
+        current_price = prices[coin_id]['usd']
+        quantity = amount_usd / current_price
+        
+        print(f"Price: ${current_price}, Quantity: {quantity}")
+        
+        # Check if user has enough balance
+        portfolio = user_portfolios[username]
+        print(f"User balance: ${portfolio['balance']}")
+        
+        if portfolio['balance'] < amount_usd:
+            print(f"ERROR: Insufficient balance")
+            return jsonify({'error': 'Insufficient balance'}), 400
+        
+        # Execute trade
+        portfolio['balance'] -= amount_usd
+        if coin_id in portfolio['holdings']:
+            portfolio['holdings'][coin_id] += quantity
+        else:
+            portfolio['holdings'][coin_id] = quantity
+        
+        # Record transaction
+        transaction = {
+            'type': 'buy',
+            'coin_id': coin_id,
+            'quantity': quantity,
+            'price': current_price,
+            'amount': amount_usd,
+            'timestamp': datetime.now().isoformat()
+        }
+        transaction_history[username].append(transaction)
+        
+        print(f"✅ Transaction successful!")
+        print(f"New balance: ${portfolio['balance']}")
+        print(f"Holdings: {portfolio['holdings']}")
+        
+        # Send SNS email notification
+        subject, message = format_transaction_email(
+            'buy', username, user_email, coin_id, quantity, current_price, amount_usd
+        )
+        send_sns_notification(subject, message, user_email)
+        
+        return jsonify({'success': True, 'transaction': transaction})
     
-    username = session['username']
-    user_email = session.get('email', '')
-    initialize_user_portfolio(username)
-    
-    coin_id = request.json.get('coin_id')
-    amount_usd = float(request.json.get('amount', 0))
-    
-    if amount_usd <= 0:
-        return jsonify({'error': 'Invalid amount'}), 400
-    
-    # Get current price
-    prices = get_crypto_prices([coin_id])
-    if coin_id not in prices:
-        return jsonify({'error': 'Coin not found'}), 400
-    
-    current_price = prices[coin_id]['usd']
-    quantity = amount_usd / current_price
-    
-    # Check if user has enough balance
-    portfolio = user_portfolios[username]
-    if portfolio['balance'] < amount_usd:
-        return jsonify({'error': 'Insufficient balance'}), 400
-    
-    # Execute trade
-    portfolio['balance'] -= amount_usd
-    if coin_id in portfolio['holdings']:
-        portfolio['holdings'][coin_id] += quantity
-    else:
-        portfolio['holdings'][coin_id] = quantity
-    
-    # Record transaction
-    transaction = {
-        'type': 'buy',
-        'coin_id': coin_id,
-        'quantity': quantity,
-        'price': current_price,
-        'amount': amount_usd,
-        'timestamp': datetime.now().isoformat()
-    }
-    transaction_history[username].append(transaction)
-    
-    # Send SNS email notification
-    subject, message = format_transaction_email(
-        'buy', username, user_email, coin_id, quantity, current_price, amount_usd
-    )
-    send_sns_notification(subject, message, user_email)
-    
-    return jsonify({'success': True, 'transaction': transaction})
+    except Exception as e:
+        print(f"❌ EXCEPTION in buy_coin: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 @app.route('/api/sell_coin', methods=['POST'])
 def sell_coin():
